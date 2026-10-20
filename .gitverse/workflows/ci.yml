@@ -1,0 +1,51 @@
+name: CI with Docker
+
+on:
+  - pull_request
+
+env:
+    MAX_BOT_TOKEN: ${{ secrets.MAX_BOT_TOKEN }}
+    PGCONNECT_TIMEOUT: ${{ secrets.PGCONNECT_TIMEOUT }}
+    PGDATABASE: ${{ secrets.PGDATABASE }}
+    PGHOST: ${{ secrets.PGHOST }}
+    PGPASSWORD: ${{ secrets.PGPASSWORD }}
+    PGPOOL_MAX: ${{ secrets.PGPOOL_MAX }}
+    PGPOOL_MIN: ${{ secrets.PGPOOL_MIN }}
+    PGPORT: ${{ secrets.PGPORT }}
+    PGUSER: ${{ secrets.PGUSER }}
+    TIMEZONE: ${{ secrets.TIMEZONE }}
+
+jobs:
+  build-test:
+    name: Lint → Build → Test
+    runs-on: ubuntu-cloud-runner
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ gitverse.token }}
+          fetch-depth: 0
+
+      #      - name: Посмотреть доступные переменные окружения
+#        run: |
+#          echo "Доступные переменные окружения:"
+#          printenv
+      - name: Установка зависимостей
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make git python3 python3-poetry
+
+#      - name: Клонирование репозитория
+#        run:
+#          git clone --branch $GITHUB_REF_NAME --single-branch https://${{ gitverse.token }}@gitverse.ru/${{ gitverse.repository }}.git .
+
+      - name: Poetry
+        run: |
+          poetry config virtualenvs.create true
+          poetry install --no-root --no-interaction --no-ansi
+
+      - name: Линтинг кода
+        run: make check_lint
+
+      - name: Тестирование кода
+        run: make test
